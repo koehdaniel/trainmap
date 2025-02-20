@@ -19,9 +19,11 @@ $sql->bind_param("s", $search);
 $sql->execute();
 $result = $sql->get_result();
 
+$results = array();
 while ($row = $result->fetch_object()) {
-    echo "ID: " . $row->id . " - Name: " . $row->name . "<br>";
+    $results[] = $row;
 }
+echo json_encode($results);
 
 // Close connection
 $conn->close();
