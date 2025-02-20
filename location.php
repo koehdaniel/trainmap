@@ -2,6 +2,7 @@
 include_once ".env.php";
 
 header("Access-Control-Allow-Origin: *");
+header('Content-Type: application/json');
 
 // Create connection
 $conn = new mysqli($db_name, $db_user, $db_pass, $db_name);
