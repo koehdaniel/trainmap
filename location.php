@@ -15,7 +15,7 @@ if ($conn->connect_error) {
 $search = "%" . $_GET["name"] . "%";
 
 // Sample query
-$sql = $conn->prepare("SELECT id, name FROM `stations` WHERE `name` LIKE ?");
+$sql = $conn->prepare("SELECT * FROM `stations` WHERE `name` LIKE ?");
 $sql->bind_param("s", $search);
 $sql->execute();
 $result = $sql->get_result();
