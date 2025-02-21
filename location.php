@@ -37,7 +37,18 @@ if ($conn->connect_error) {
 }
 
 $searchName = $_GET["name"];
-$search = $searchName . "%";
+$city = "";
+$country = "";
+$withCountry = false;
+
+if(str_contains($searchName, "(")){
+    $withCountry = true;
+    $cityAndCountry = explode("(", $searchName);
+    $city = trim($cityAndCountry[0]);
+    $country = trim(str_replace(")", "", $cityAndCountry[1]));
+}
+
+$search = trim($searchName) . "%";
 
 if($search[0] == "*"){
     $search[0] = "%";
@@ -52,8 +63,8 @@ if(count($results) < 2 && $search[0] != "%"){
     addToArray($results, searchForName("stations", $search, 0));
 }
 
-//Not enough results, try city search with wildcard since already enforced anyway
-if(count($results) < 2){
+//Not enough results, try city search
+if(count($results) < 2 || $withCountry){
     addToArray($results, searchForName("cities", $search));
 }
 
