@@ -5,12 +5,13 @@ include_once ".env.php";
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 
-function searchForName($table, $name, $suggestable=0, $limit=20){
+function searchForName($table, $name, $suggestable=1, $limit=20){
     global $conn;
     $sql = "SELECT id, name, longitude, latitude FROM `$table` WHERE `name` LIKE ? AND is_suggestable=$suggestable LIMIT $limit";
     $sql = $conn->prepare($sql);
     $sql->bind_param("s", $name);
     $sql->execute();
+    $sql->get_result();
     return $sql;
 }
 function addToArray(&$array, $dbResult){
@@ -35,18 +36,17 @@ if($search[0] == "*"){
 }
 
 $results = array();
-print_r(searchForName("stations", $search));
-addToArray($results, searchForName("stations", $search)->get_results());
+addToArray($results, searchForName("stations", $search));
 
 //Not enough results, try wildcard search if not yet done
 if(count($results) < 2 && $search[0] != "%"){
     $search = "%$search";
-    addToArray($results, searchForName("stations", $search)->get_results());
+    addToArray($results, searchForName("stations", $search, 0));
 }
 
 //Not enough results, try city search with wildcard since already enforced anyway
 if(count($results) < 2){
-    addToArray($results, searchForName("cities", $search)->get_results());
+    addToArray($results, searchForName("cities", $search));
 }
 
 echo json_encode($results);
