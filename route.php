@@ -2,7 +2,7 @@
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 
-$url = "https://signal.eu.org/osm/eu/route/v1/train/" . $_GET["from"] . ";" . $_GET["to"] . "12.482932,41.89332?overview=false&alternatives=true&steps=true";
+$url = "https://signal.eu.org/osm/eu/route/v1/train/" . $_GET["from"] . ";" . $_GET["to"] . "?overview=false&alternatives=true&steps=true";
 
 $route = json_decode(file_get_contents($url));
 
