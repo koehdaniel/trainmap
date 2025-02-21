@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Vue Map App – Route as Polyline with Station Dropdowns</title>
+  <title>TrainMap - Track your Journeys</title>
   <!-- Leaflet CSS -->
   <link
           rel="stylesheet"
@@ -27,6 +27,7 @@
 </head>
 <body>
 <div id="app">
+  <journey-editor></journey-editor>
   <map-form></map-form>
 </div>
 
@@ -38,8 +39,6 @@
         integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
         crossorigin=""
 ></script>
-<!-- PapaParse for CSV parsing -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <!-- Include Vue Select CSS -->
 <link rel="stylesheet" href="https://unpkg.com/vue-select@latest/dist/vue-select.css">
@@ -52,9 +51,9 @@
 
   Vue.component("map-form", {
     template: `
-          <div>
+          <div id="journey-plan" style="background-color:#fff; padding: 10px; margin-left: 50px; width: 500px;">
             <div class="form">
-              <label>
+              <label style="display: inline-block; width: 200px;">
                 Startbahnhof:
                 <v-select
                         v-model="startBahnhof"
@@ -66,7 +65,7 @@
                         placeholder="Bitte auswählen"
                 ></v-select>
               </label>
-              <label>
+              <label style="display: inline-block; width: 200px;">
                 Zielbahnhof:
                 <v-select
                         v-model="zielBahnhof"
@@ -82,7 +81,7 @@
               <button @click="addRoute">hinzufügen</button>
             </div>
             <!-- Map container -->
-            <div id="map" ref="map" style="height: 400px; margin-top: 20px;"></div>
+            <div id="map" ref="map" style="height: 100vh; width: 100vw; top:0; position: absolute; left:0; z-index: -1;"></div>
           </div>
         `,
     data() {
