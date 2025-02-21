@@ -44,6 +44,7 @@ $country = "";
 $withCountry = false;
 
 if(str_contains($searchName, "(")){
+    error_log("searchWithCity");
     $withCountry = true;
     $cityAndCountry = explode("(", $searchName);
     $city = trim($cityAndCountry[0]);
