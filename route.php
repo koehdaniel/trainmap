@@ -13,6 +13,4 @@ foreach($route->routes[0]->legs[0]->steps as $step){
     }
 }
 
-print_r($steps);
-?>
-
+echo json_encode($steps);
