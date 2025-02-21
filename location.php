@@ -5,9 +5,15 @@ include_once ".env.php";
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 
-function searchForName($table, $name, $suggestable=1, $limit=20){
+function searchForName($table, $name, $suggestable=NULL, $limit=20){
     global $conn;
-    $sql = "SELECT id, name, longitude, latitude FROM `$table` WHERE `name` LIKE ? AND is_suggestable=$suggestable LIMIT $limit";
+
+    $suggest = "";
+    if(is_numeric($suggestable)){
+        $suggest = " AND is_suggestable=$suggestable";
+    }
+
+    $sql = "SELECT id, name, longitude, latitude FROM `$table` WHERE `name` LIKE ? $suggest LIMIT $limit";
     $sql = $conn->prepare($sql);
     $sql->bind_param("s", $name);
     $sql->execute();
@@ -35,7 +41,7 @@ if($search[0] == "*"){
 }
 
 $results = array();
-addToArray($results, searchForName("stations", $search));
+addToArray($results, searchForName("stations", $search, 1));
 
 //Not enough results, try wildcard search if not yet done
 if(count($results) < 2 && $search[0] != "%"){
