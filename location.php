@@ -35,6 +35,7 @@ if($search[0] == "*"){
 }
 
 $results = array();
+print_r(searchForName("stations", $search));
 addToArray($results, searchForName("stations", $search)->get_results());
 
 //Not enough results, try wildcard search if not yet done
