@@ -16,7 +16,7 @@ function searchForName($table, $name, $suggestable=1, $limit=20){
         $sql = "SELECT id, CONCAT(name, ' (', country_code, ')') as name, longitude, latitude FROM `$table` WHERE `name` LIKE ? LIMIT $limit";
     }
 
-    log($sql . " => " . $name);
+    logging($sql . " => " . $name);
 
     ;
     $sql = $conn->prepare($sql);
@@ -29,11 +29,11 @@ function addToArray(&$array, $dbResult){
         $array[] = $row;
     }
 }
-//function log($msg) {
-//        $stderr = fopen('php://stderr', 'w');
-//        fwrite($stderr,$msg);
-//        fclose($stderr);
-//}
+function logging($msg) {
+        $stderr = fopen('php://stderr', 'w');
+        fwrite($stderr,$msg);
+        fclose($stderr);
+}
 
 // Create connection
 $conn = new mysqli($db_name, $db_user, $db_pass, $db_name);
@@ -49,7 +49,7 @@ $country = "";
 $withCountry = false;
 
 if(str_contains($searchName, "(")){
-    log("searchWithCity");
+    logging("searchWithCity");
     $withCountry = true;
     $cityAndCountry = explode("(", $searchName);
     $city = trim($cityAndCountry[0]);
@@ -67,14 +67,14 @@ addToArray($results, searchForName("stations", $search, 1));
 
 //Not enough results, try wildcard search if not yet done
 if(count($results) < 2 && $search[0] != "%"){
-    log("searchForStation");
+    logging("searchForStation");
     $search = "%$search";
     addToArray($results, searchForName("stations", $search, 0));
 }
 
 //Not enough results, try city search
 if(count($results) < 2 || $withCountry){
-    log("searchForCity");
+    logging("searchForCity");
     addToArray($results, searchForName("cities", $search));
 }
 
