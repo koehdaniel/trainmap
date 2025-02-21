@@ -7,7 +7,7 @@ $url = "https://signal.eu.org/osm/eu/route/v1/train/13.398937,52.510885;12.48293
 $route = json_decode(file_get_contents($url));
 
 $steps = array();
-foreach($route->routes->legs->steps as $step){
+foreach($route->routes[0]->legs[0]->steps as $step){
     $steps[] = $step->intersections->location;
 }
 
