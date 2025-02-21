@@ -11,8 +11,7 @@ function searchForName($table, $name, $suggestable=1, $limit=20){
     $sql = $conn->prepare($sql);
     $sql->bind_param("s", $name);
     $sql->execute();
-    $sql->get_result();
-    return $sql;
+    return $sql->get_result();
 }
 function addToArray(&$array, $dbResult){
     while ($row = $dbResult->fetch_object()) {
