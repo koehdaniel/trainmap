@@ -29,11 +29,11 @@ function addToArray(&$array, $dbResult){
         $array[] = $row;
     }
 }
-function log($msg) {
-        $stderr = fopen('php://stderr', 'w');
-        fwrite($stderr,$msg);
-        fclose($stderr); 
-}
+//function log($msg) {
+//        $stderr = fopen('php://stderr', 'w');
+//        fwrite($stderr,$msg);
+//        fclose($stderr);
+//}
 
 // Create connection
 $conn = new mysqli($db_name, $db_user, $db_pass, $db_name);
