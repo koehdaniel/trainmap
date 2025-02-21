@@ -48,49 +48,43 @@
 
 <script>
   Vue.component('v-select', VueSelect.VueSelect);
-
-  Vue.component("map-form", {
+  Vue.component('journey-editor', {
     template: `
-          <div id="journey-plan" style="background-color:#fff; padding: 10px; margin-left: 50px; width: 500px;">
-            <div class="form">
-              <label style="display: inline-block; width: 200px;">
-                Startbahnhof:
-                <v-select
-                        v-model="startBahnhof"
-                        :options="stations"
-                        label="name"
-                        :filterable="true"
-                        @search="onSearchInput"
-                        :reduce="station => station.longitude + ',' + station.latitude"
-                        placeholder="Bitte auswählen"
-                ></v-select>
-              </label>
-              <label style="display: inline-block; width: 200px;">
-                Zielbahnhof:
-                <v-select
-                        v-model="zielBahnhof"
-                        :options="stations"
-                        label="name"
-                        :filterable="true"
-                        @search="onSearchInput"
-                        :reduce="station => station.longitude + ',' + station.latitude"
-                        placeholder="Bitte auswählen"
-                ></v-select>
-              </label>
+      <div id="journey-plan" style="background-color:#fff; padding: 10px; margin-left: 50px; width: 500px; z-index:5;">
+        <div class="form">
+          <label style="display: inline-block; width: 200px;">
+            Startbahnhof:
+            <v-select
+                    v-model="startBahnhof"
+                    :options="stations"
+                    label="name"
+                    :filterable="true"
+                    @search="onSearchInput"
+                    :reduce="station => station.longitude + ',' + station.latitude"
+                    placeholder="Bitte auswählen"
+            ></v-select>
+          </label>
+          <label style="display: inline-block; width: 200px;">
+            Zielbahnhof:
+            <v-select
+                    v-model="zielBahnhof"
+                    :options="stations"
+                    label="name"
+                    :filterable="true"
+                    @search="onSearchInput"
+                    :reduce="station => station.longitude + ',' + station.latitude"
+                    placeholder="Bitte auswählen"
+            ></v-select>
+          </label>
 
-              <button @click="addRoute">hinzufügen</button>
-            </div>
-            <!-- Map container -->
-            <div id="map" ref="map" style="height: 100vh; width: 100vw; top:0; position: absolute; left:0; z-index: -1;"></div>
-          </div>
-        `,
+          <button @click="addRoute">hinzufügen</button>
+        </div>
+      </div>`,
     data() {
       return {
         startBahnhof: "",
         zielBahnhof: "",
         stations: [],
-        map: null,
-        routePolyline: null
       };
     },
     methods: {
@@ -124,12 +118,36 @@
                 });
       },
       addRoute() {
-        if (!this.startBahnhof || !this.zielBahnhof) {
+        this.$root.$emit('travel-section-added', {
+          travelSection: {
+            from: this.startBahnhof,
+            to: this.zielBahnhof
+          }
+        })
+      }
+    },
+    mounted() {
+      // this.fetchStations();
+    }
+  })
+  Vue.component("map-form", {
+    template: `
+          <div id="map" ref="map" style="height: 100vh; width: 100vw; top:0; position: absolute; left:0; z-index: -1;"></div>
+    `,
+    data() {
+      return {
+        map: null,
+        routePolyline: null
+      };
+    },
+    methods: {
+      addRoute(from, to) {
+        if (!from || !to) {
           alert("Bitte wählen Sie beide Stationen aus.");
           return;
         }
         // Build URL using selected station ids (startBahnhof and zielBahnhof)
-        const url = `https://trainmap.flubb.de/route.php?from=${encodeURIComponent(this.startBahnhof)}&to=${encodeURIComponent(this.zielBahnhof)}`;
+        const url = `https://trainmap.flubb.de/route.php?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
         fetch(url)
                 .then(response => response.json())
                 .then(data => {
@@ -147,7 +165,7 @@
       },
       initMap() {
         // Initialize the map (centered roughly on France)
-        this.map = L.map(this.$refs.map).setView([46.603354, 1.8883335], 6);
+        this.map = L.map(this.$refs.map).setView([50.825952, 9.03693], 6);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "&copy; OpenStreetMap contributors"
         }).addTo(this.map);
@@ -155,7 +173,9 @@
     },
     mounted() {
       this.initMap();
-      // this.fetchStations();
+      this.$root.$on('travel-section-added', (payload) => {
+        this.addRoute(payload.travelSection.from, payload.travelSection.to);
+      })
     }
   });
 
