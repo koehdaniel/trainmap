@@ -8,7 +8,9 @@ $route = json_decode(file_get_contents($url));
 
 $steps = array();
 foreach($route->routes[0]->legs[0]->steps as $step){
-    $steps[] = $step->intersections->location;
+    foreach($step->intersections as $intersection){
+        $steps[] = $intersection->location;
+    }
 }
 
 print_r($steps);
