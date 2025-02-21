@@ -30,9 +30,7 @@ function addToArray(&$array, $dbResult){
     }
 }
 function logging($msg) {
-        $stderr = fopen('php://stderr', 'w');
-        fwrite($stderr,$msg);
-        fclose($stderr);
+    error_log($msg, 3, 'debug.log');
 }
 
 // Create connection
