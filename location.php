@@ -16,6 +16,8 @@ function searchForName($table, $name, $suggestable=1, $limit=20){
         $sql = "SELECT id, CONCAT(name, ' (', country_code, ')') as name, longitude, latitude FROM `$table` WHERE `name` LIKE ? LIMIT $limit";
     }
 
+    error_log($sql . " => " . $name);
+
     ;
     $sql = $conn->prepare($sql);
     $sql->bind_param("s", $name);
@@ -48,7 +50,7 @@ if(str_contains($searchName, "(")){
     $country = trim(str_replace(")", "", $cityAndCountry[1]));
 }
 
-$search = trim($searchName) . "%";
+$search = trim($city) . "%";
 
 if($search[0] == "*"){
     $search[0] = "%";
@@ -59,12 +61,14 @@ addToArray($results, searchForName("stations", $search, 1));
 
 //Not enough results, try wildcard search if not yet done
 if(count($results) < 2 && $search[0] != "%"){
+    error_log("searchForStation");
     $search = "%$search";
     addToArray($results, searchForName("stations", $search, 0));
 }
 
 //Not enough results, try city search
 if(count($results) < 2 || $withCountry){
+    error_log("searchForCity");
     addToArray($results, searchForName("cities", $search));
 }
 
