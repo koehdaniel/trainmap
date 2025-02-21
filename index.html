@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vue Map App – Route as Polyline with Station Dropdowns</title>
+  <!-- Leaflet CSS -->
+  <link
+          rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+          integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+          crossorigin=""
+  />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .form label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    .form select {
+      width: 220px;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <map-form></map-form>
+</div>
+
+<!-- Vue via CDN (Vue 2) -->
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<!-- Leaflet JS -->
+<script
+        src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+        integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+        crossorigin=""
+></script>
+<!-- PapaParse for CSV parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+<!-- Include Vue Select CSS -->
+<link rel="stylesheet" href="https://unpkg.com/vue-select@latest/dist/vue-select.css">
+<!-- Include Vue Select JS -->
+<script src="https://unpkg.com/vue-select@latest"></script>
+
+
+<script>
+  Vue.component('v-select', VueSelect.VueSelect);
+
+  Vue.component("map-form", {
+    template: `
+          <div>
+            <div class="form">
+              <label>
+                Startbahnhof:
+                <v-select
+                        v-model="startBahnhof"
+                        :options="stations"
+                        label="name"
+                        :filterable="true"
+                        @search="onSearchInput"
+                        :reduce="station => station.longitude + ',' + station.latitude"
+                        placeholder="Bitte auswählen"
+                ></v-select>
+              </label>
+              <label>
+                Zielbahnhof:
+                <v-select
+                        v-model="zielBahnhof"
+                        :options="stations"
+                        label="name"
+                        :filterable="true"
+                        @search="onSearchInput"
+                        :reduce="station => station.longitude + ',' + station.latitude"
+                        placeholder="Bitte auswählen"
+                ></v-select>
+              </label>
+
+              <button @click="addRoute">hinzufügen</button>
+            </div>
+            <!-- Map container -->
+            <div id="map" ref="map" style="height: 400px; margin-top: 20px;"></div>
+          </div>
+        `,
+    data() {
+      return {
+        startBahnhof: "",
+        zielBahnhof: "",
+        stations: [],
+        map: null,
+        routePolyline: null
+      };
+    },
+    methods: {
+      onSearchInput(searchTerm) {
+        console.log(searchTerm);
+        if(searchTerm.length >= 1) {
+          this.loadStations(searchTerm)
+        }
+      },
+      loadStations(input) {
+        fetch("https://trainmap.flubb.de/location.php?name=" + input)
+                .then(response => response.json())
+                .then(locations => {
+                  locations.forEach(l => {
+                    if(!this.stations.find(s => s.id === l.id)){
+                      this.stations.push(l);
+                    }
+                  })
+                  // this.stations.push(...locations);
+                  // this.stations = locations.map(station => ({
+                  //   id: station.id,
+                  //   name: station.name,
+                  //   // Include other necessary properties
+                  // }));
+                  console.log("stations:");
+                  console.log(this.stations);
+                })
+                .catch(error => {
+                  console.error('Error loading CSV:', error);
+                  this.stations = []; // Clear stations on error
+                });
+      },
+      addRoute() {
+        if (!this.startBahnhof || !this.zielBahnhof) {
+          alert("Bitte wählen Sie beide Stationen aus.");
+          return;
+        }
+        // Build URL using selected station ids (startBahnhof and zielBahnhof)
+        const url = `https://trainmap.flubb.de/route.php?from=${encodeURIComponent(this.startBahnhof)}&to=${encodeURIComponent(this.zielBahnhof)}`;
+        fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                  // Convert coordinates from [lon, lat] to [lat, lon]
+                  const coords = data.map(pair => [pair[1], pair[0]]);
+                  // if (this.routePolyline) {
+                  // const coords = data;
+                  //   this.map.removeLayer(this.routePolyline);
+                  // }
+                  // Create a polyline for the route (blue color)
+                  this.routePolyline = L.polyline(coords, { color: "blue" }).addTo(this.map);
+                  this.map.fitBounds(this.routePolyline.getBounds());
+                })
+                .catch(error => console.error("API error:", error));
+      },
+      initMap() {
+        // Initialize the map (centered roughly on France)
+        this.map = L.map(this.$refs.map).setView([46.603354, 1.8883335], 6);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap contributors"
+        }).addTo(this.map);
+      }
+    },
+    mounted() {
+      this.initMap();
+      // this.fetchStations();
+    }
+  });
+
+  new Vue({
+    el: "#app"
+  });
+</script>
+</body>
+</html>
