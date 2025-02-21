@@ -5,15 +5,18 @@ include_once ".env.php";
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 
-function searchForName($table, $name, $suggestable=NULL, $limit=20){
+function searchForName($table, $name, $suggestable=1, $limit=20){
     global $conn;
 
-    $suggest = "";
-    if(is_numeric($suggestable)){
-        $suggest = " AND is_suggestable=$suggestable";
+    $sql = "";
+    if($table == "stations"){
+        $sql = "SELECT id, CONCAT(name, ' (', country, ')') as name, longitude, latitude FROM `$table` WHERE `name` LIKE ? AND is_suggestable=$suggestable LIMIT $limit";
+    }
+    elseif($table == "cities"){
+        $sql = "SELECT id, CONCAT(name, ' (', country_code, ')') as name, longitude, latitude FROM `$table` WHERE `name` LIKE ? LIMIT $limit";
     }
 
-    $sql = "SELECT id, name, longitude, latitude FROM `$table` WHERE `name` LIKE ? $suggest LIMIT $limit";
+    ;
     $sql = $conn->prepare($sql);
     $sql->bind_param("s", $name);
     $sql->execute();
