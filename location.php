@@ -30,7 +30,7 @@ function addToArray(&$array, $dbResult){
     }
 }
 function logging($msg) {
-    error_log($msg, 3, 'debug.log');
+    error_log("\r\n" . date('m/d/Y h:i:s a', time()) . "\t" . $msg, 3, 'debug.log');
 }
 
 // Create connection
@@ -42,7 +42,7 @@ if ($conn->connect_error) {
 }
 
 $searchName = $_GET["name"];
-$city = "";
+$city = $searchName;
 $country = "";
 $withCountry = false;
 
