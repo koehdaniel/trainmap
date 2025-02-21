@@ -15,7 +15,7 @@ if ($conn->connect_error) {
 $search = "%" . $_GET["name"] . "%";
 
 // Sample query
-$sql = $conn->prepare("SELECT * FROM `stations` WHERE `name` LIKE ? LIMIT 20");
+$sql = $conn->prepare("SELECT * FROM `stations` WHERE `name` LIKE ? AND is_suggestable=1 LIMIT 20");
 $sql->bind_param("s", $search);
 $sql->execute();
 $result = $sql->get_result();
