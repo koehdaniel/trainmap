@@ -1,8 +1,22 @@
 <?php
+$db_name = $db_user = $db_pass = $db_name = "";
 include_once ".env.php";
 
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
+
+function searchForName($table, $name, $suggestable=0, $limit=20){
+    global $conn;
+    $sql = "SELECT id, name, longitude, latitude FROM `$table` WHERE `name` LIKE ? AND is_suggestable=$suggestable LIMIT $limit";
+    $sql = $conn->prepare($sql);
+    $sql->bind_param("s", $name);
+    return $sql;
+}
+function addToArray(&$array, $dbResult){
+    while ($row = $dbResult->fetch_object()) {
+        $array[] = $row;
+    }
+}
 
 // Create connection
 $conn = new mysqli($db_name, $db_user, $db_pass, $db_name);
@@ -12,21 +26,32 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-$search = "%" . $_GET["name"] . "%";
+$searchName = $_GET["name"];
+$search = $searchName . "%";
 
-// Sample query
-$sql = $conn->prepare("SELECT * FROM `stations` WHERE `name` LIKE ? AND is_suggestable=1 LIMIT 20");
-$sql->bind_param("s", $search);
-$sql->execute();
-$result = $sql->get_result();
+if($search[0] == "*"){
+    $search[0] = "%";
+}
 
 $results = array();
-while ($row = $result->fetch_object()) {
-    $results[] = $row;
+addToArray($results, searchForName("stations", $search)->execute()->get_results());
+
+//Not enough results, try wildcard search if not yet done
+if(count($results) < 2 && $search[0] != "%"){
+    $search = "%$search";
+    addToArray($results, searchForName("stations", $search)->execute()->get_results());
 }
+
+//Not enough results, try city search with wildcard since already enforced anyway
+if(count($results) < 2){
+    addToArray($results, searchForName("cities", $search)->execute()->get_results());
+}
+
 echo json_encode($results);
 
 // Close connection
 $conn->close();
+
+
 
 ?>
