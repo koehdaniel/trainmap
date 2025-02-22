@@ -4,11 +4,11 @@ header('Content-Type: application/json');
 
 $fromLat = floatval($_GET["from_lat"]);
 $fromLon = floatval($_GET["from_lon"]);
-$from = $fromLat . "," . $fromLon;
+$from = $fromLon . "," . $fromLat;
 
 $toLat = floatval($_GET["to_lat"]);
 $toLon = floatval($_GET["to_lon"]);
-$to = $toLat . "," . $toLon;
+$to = $toLon . "," . $toLat;
 
 $latitudeFirst = $_GET["order"] == "lat,lon";
 
