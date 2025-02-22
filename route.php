@@ -12,7 +12,12 @@ $steps = array();
 $steps[] = explode(",", $from);
 foreach($route->routes[0]->legs[0]->steps as $step){
     foreach($step->intersections as $intersection){
-        $steps[] = $intersection->location;
+        if($_GET["order"] == "lat,lon"){
+            $steps[] = array($intersection->location[1], $intersection->location[0]);
+        }
+        else{
+            $steps[] = $intersection->location;
+        }
     }
 }
 $steps[] = explode(",", $to);
