@@ -2,12 +2,12 @@
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 
-$fromLat = $_GET["from_lat"];
-$fromLon = $_GET["from_lon"];
+$fromLat = floatval($_GET["from_lat"]);
+$fromLon = floatval($_GET["from_lon"]);
 $from = $fromLat . "," . $fromLon;
 
-$toLat = $_GET["to_lat"];
-$toLon = $_GET["to_lon"];
+$toLat = floatval($_GET["to_lat"]);
+$toLon = floatval($_GET["to_lon"]);
 $to = $toLat . "," . $toLon;
 
 $latitudeFirst = $_GET["order"] == "lat,lon";
