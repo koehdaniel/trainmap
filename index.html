@@ -59,8 +59,9 @@
 <script>
     Vue.component('v-select', VueSelect.VueSelect);
     Vue.component('station-selector', {
+        props: [ 'station', 'debug' ],
         template: `
-          <label style="display: inline-block; width: 200px;">
+          <label style="display: inline-block; width: 200px;" :class="debug">
             <slot></slot>
             <span v-if="!$slots">:</span>
             <v-select
@@ -107,14 +108,32 @@
                         console.error('Error loading stations:', error);
                     });
             }
+        },
+        mounted() {
+            console.log("station-selector mounted with props:", this.station)
+            this.entry = this.station; //TODO watch if prop changes later on!!!
+            console.log("station-selector-debug:", this.debug)
+        },
+        watch: {
+            station: function(newVal, oldVal) {
+                console.log("prop station changed:", this.debug, newVal, oldVal)
+                this.entry = newVal;
+            }
         }
     })
     Vue.component('journey-editor', {
         template: `
           <div id="journey-editor">
-            <journey-section @journey-section-added="addJourneySection"></journey-section>
-            <journey-section @journey-section-added="addJourneySection" v-for="journey in journeys"
-                             header='false' :journey="journey"></journey-section>
+            <journey-section @journey-section-added="addJourneySection"
+                             @journey-section-removed="removeJourneySection"
+                             v-for="(journey, index) in journeys"
+                             :key="journey.travelSection.from.id + '-' + journey.travelSection.to.id"
+                             :header="index === 0"
+                             :journey="journey" :debug="index"></journey-section>
+            <journey-section @journey-section-added="addJourneySection"
+                             @journey-section-removed="removeJourneySection"
+                             :header="journeys.length === 0"
+                             last_line="true" debug="bottom"></journey-section>
           </div>
         `,
         data() {
@@ -127,54 +146,95 @@
                 this.journeys.push(journeySection);
                 console.log(this.journeys);
                 this.$root.$emit("journeys-updated", this.journeys);
+            },
+            removeJourneySection(journeySection) {
+                console.log("removeJourneySection", journeySection)
+                this.journeys = this.journeys.filter(journey => {
+                    console.log("find-journey", journey)
+                    return journey.travelSection.from.id != journeySection.travelSection.from.id && journey.travelSection.to.id != journeySection.travelSection.to.id;
+                });
+                this.$root.$emit("journey-section-removed", {
+                    travelSection: journeySection.travelSection
+                })
             }
         }
     })
     Vue.component('journey-section', {
-        props: [ 'header', 'journey' ],
+        props: [ 'header', 'journey', 'last_line', 'debug' ],
         template: `
           <div id="journey-plan"
                style="background-color:#fff; padding: 10px; margin-left: 50px; width: 405px; z-index:5;">
             <div class="journey-form">
-              <station-selector @station-selected="setFrom"><span v-if="header !== 'false'">Departure</span></station-selector>
-              <station-selector @station-selected="setTo"><span v-if="header !== 'false'">Arrival</span></station-selector>
+              <station-selector @station-selected="setFrom" :station="this.from" :debug="this.debug + 'li'"><span v-if="header !== false">Departure</span></station-selector>
+              <station-selector @station-selected="setTo" :station="this.to" :debug="this.debug + 're'"><span v-if="header !== false">Arrival</span></station-selector>
             </div>
           </div>`,
         data() {
             return {
-                from: {},
-                to: {}
+                from: null,
+                to: null
             };
         },
         methods: {
             setFrom(msg) {
-                this.from = msg.entry;
-                if (this.from.id > 0 && this.to.id > 0) {
-                    this.addRoute();
+                if(this.from != null){
+                    this.removeRoute();
                 }
+                this.from = msg.entry;
+                this.addRoute();
             },
             setTo(msg) {
-                this.to = msg.entry;
-                if (this.from.id > 0 && this.to.id > 0) {
-                    this.addRoute();
+                if(this.to != null){
+                    this.removeRoute();
                 }
+                this.to = msg.entry;
+                this.addRoute();
             },
             addRoute() {
-                this.$emit('journey-section-added', {
+                if(this.from != null && this.to != null) {
+                    this.$emit('journey-section-added', {
+                        travelSection: {
+                            from: {...this.from},
+                            to: {...this.to},
+                            id: this.from.id + "-" + this.to.id,
+                            debug: 'Line200'
+                        }
+                    });
+
+                    if(this.last_line === "true") {
+                        this.$nextTick(() => {
+                            this.reset();
+                        })
+                    }
+                    console.log("added-route", "header:", this.header, "journey:", this.journey, "last_line:", this.last_line)
+                }
+            },
+            removeRoute(){
+                this.$emit('journey-section-removed', {
                     travelSection: {
-                        from: this.from,
-                        to: this.to
+                        from: {...this.from},
+                        to: {...this.to},
+                        id: this.from.id + "-" + this.to.id,
+                        debug: 'Line215'
                     }
                 })
+            },
+            reset(){
+                console.log("reset", this.debug, "header:", this.header, "journey:", this.journey, "last_line:", this.last_line)
+                // this.to = { id: -1, name: "", longitude: -1, latitude: -1};
+                // this.from = { id: -1, name: "", longitude: -1, latitude: -1};
+
+                this.to = null;
+                this.from = null;
             }
         },
         mounted() {
-            console.log("MOUNTED!!", this.journey)
+            console.log("journey-section mounted with props", this.journey)
             if(this.journey){
-                console.log("OVERWRITE")
-                // this.from = this.journey.travelSection.from;
-                // this.to = this.journey.travelSection.to;
+                this.from = this.journey.travelSection.from;
+                this.to = this.journey.travelSection.to;
             }
+            console.log("journey-section-debug:", this.debug)
         }
     })
     Vue.component("map-form", {
@@ -185,7 +245,7 @@
         data() {
             return {
                 map: null,
-                lines: []
+                lines: new Map()
             };
         },
         methods: {
@@ -204,7 +264,8 @@
                         // Create a polyline for the route (blue color)
                         let routePolyline = L.polyline(coords, {color: "blue"}).addTo(this.map);
                         this.map.fitBounds(routePolyline.getBounds());
-                        this.lines.push(routePolyline);
+                        console.log("add-line", from.id + "-" + to.id, routePolyline)
+                        this.lines.set(from.id + "-" + to.id, routePolyline);
                     })
                     .catch(error => console.error("API error:", error));
             },
@@ -219,22 +280,46 @@
         mounted() {
             this.initMap();
             this.$root.$on('journey-section-added', (payload) => {
-                console.log(payload);
+                console.log("journey-section-added", payload);
                 this.visualizeRoute(payload.travelSection.from, payload.travelSection.to);
             })
 
+            this.$root.$on('journey-section-removed', (payload) => {
+                console.log("journey-section-removed", payload);
+                // this.visualizeRoute(payload.travelSection.from, payload.travelSection.to);
+                let line = this.lines.get(payload.travelSection.id);
+                console.log("line", line);
+                line.remove();
+                this.lines.delete(payload.travelSection.id)
+                console.log("lines", this.lines)
+            })
+
             this.$root.$on('journeys-updated', (journeys) => {
-                console.log(journeys);
+                console.log("journeys-updated", journeys);
                 let mappy = this.map;
                 // this.map.eachLayer(function (layer) {
                 //     console.log(layer);
                 //     mappy.removeLayer(layer);
                 // })
-                this.lines.forEach(line => {
-                    line.remove();
+
+                let removedJourneys = [];
+                //remove lines if journey doesnt exist anymore
+                this.lines.forEach((line, id) => {
+                    if(!journeys.find(journey => {
+                        return journey.travelSection.id === id;
+                    })){
+                        console.log("No Journey for line with id:", id, journeys)
+                        removedJourneys.push(id);
+                        console.log("remove-line", line);
+                        line.remove();
+                    }
                 })
+                removedJourneys.forEach(id => this.lines.delete(id));
+                //visualize journey, if line not yet created
                 journeys.forEach(journey => {
-                    this.visualizeRoute(journey.travelSection.from, journey.travelSection.to);
+                    if(this.lines.get(journey.travelSection.from.id + "-" + journey.travelSection.to.id) === undefined) {
+                        this.visualizeRoute(journey.travelSection.from, journey.travelSection.to);
+                    }
                 })
 
             })
