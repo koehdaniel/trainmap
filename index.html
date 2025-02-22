@@ -149,13 +149,13 @@
         methods: {
             setFrom(msg) {
                 this.from = msg.entry;
-                if (this.to.id > 0) {
+                if (this.from.id > 0 && this.to.id > 0) {
                     this.addRoute();
                 }
             },
             setTo(msg) {
                 this.to = msg.entry;
-                if (this.from.id > 0) {
+                if (this.from.id > 0 && this.to.id > 0) {
                     this.addRoute();
                 }
             },
