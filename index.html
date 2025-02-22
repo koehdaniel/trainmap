@@ -1,34 +1,44 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>TrainMap - Track your Journeys</title>
-  <!-- Leaflet CSS -->
-  <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-          integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
-          crossorigin=""
-  />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    .form label {
-      display: block;
-      margin-bottom: 10px;
-    }
-    .form select {
-      width: 220px;
-      padding: 5px;
-    }
-  </style>
+    <meta charset="UTF-8"/>
+    <title>TrainMap - Track your Journeys</title>
+    <!-- Leaflet CSS -->
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+            integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+            crossorigin=""
+    />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .form select {
+            width: 220px;
+            padding: 5px;
+        }
+    </style>
+    <style>
+        .vs__selected{
+            max-width: 134px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+    </style>
 </head>
-<body>
-<div id="app">
-  <journey-editor></journey-editor>
-  <map-form></map-form>
+<body style="display:inline-block">
+<div id="app" style="display:inline-block">
+    <journey-editor></journey-editor>
+    <map-form></map-form>
 </div>
 
 <!-- Vue via CDN (Vue 2) -->
@@ -47,141 +57,193 @@
 
 
 <script>
-  Vue.component('v-select', VueSelect.VueSelect);
-  Vue.component('journey-editor', {
-    template: `
-      <div id="journey-plan" style="background-color:#fff; padding: 10px; margin-left: 50px; width: 500px; z-index:5;">
-        <div class="form">
+    Vue.component('v-select', VueSelect.VueSelect);
+    Vue.component('station-selector', {
+        template: `
           <label style="display: inline-block; width: 200px;">
-            Startbahnhof:
+            <slot></slot>
+            <span v-if="!$slots">:</span>
             <v-select
-                    v-model="startBahnhof"
-                    :options="stations"
-                    label="name"
-                    :filterable="true"
-                    @search="onSearchInput"
-                    :reduce="station => station.longitude + ',' + station.latitude"
-                    placeholder="Bitte auswählen"
-            ></v-select>
-          </label>
-          <label style="display: inline-block; width: 200px;">
-            Zielbahnhof:
-            <v-select
-                    v-model="zielBahnhof"
-                    :options="stations"
-                    label="name"
-                    :filterable="true"
-                    @search="onSearchInput"
-                    :reduce="station => station.longitude + ',' + station.latitude"
-                    placeholder="Bitte auswählen"
+                v-model="entry"
+                :options="entries"
+                label="name"
+                :filterable="true"
+                @search="onSearchInput"
+                @input="onItemSelected"
+                placeholder="Type to search"
             ></v-select>
           </label>
 
-          <button @click="addRoute">hinzufügen</button>
-        </div>
-      </div>`,
-    data() {
-      return {
-        startBahnhof: "",
-        zielBahnhof: "",
-        stations: [],
-      };
-    },
-    methods: {
-      onSearchInput(searchTerm) {
-        console.log(searchTerm);
-        if(searchTerm.length >= 1) {
-          this.loadStations(searchTerm)
+        `,
+        data() {
+            return {
+                entry: '',
+                entries: []
+            }
+        },
+        methods: {
+            onSearchInput(searchTerm) {
+                // console.log(searchTerm);
+                if (searchTerm.length >= 1) {
+                    this.loadStations(searchTerm)
+                }
+            },
+            onItemSelected(event) {
+                this.$emit("station-selected", {
+                    entry: this.entry
+                })
+            },
+            loadStations(input) {
+                fetch("https://trainmap.flubb.de/location.php?name=" + input)
+                    .then(response => response.json())
+                    .then(locations => {
+                        locations.forEach(l => {
+                            if (!this.entries.find(s => s.id === l.id)) {
+                                this.entries.push(l);
+                            }
+                        })
+                    })
+                    .catch(error => {
+                        console.error('Error loading stations:', error);
+                    });
+            }
         }
-      },
-      loadStations(input) {
-        fetch("https://trainmap.flubb.de/location.php?name=" + input)
-                .then(response => response.json())
-                .then(locations => {
-                  locations.forEach(l => {
-                    if(!this.stations.find(s => s.id === l.id)){
-                      this.stations.push(l);
+    })
+    Vue.component('journey-editor', {
+        template: `
+          <div id="journey-editor">
+            <journey-section @journey-section-added="addJourneySection"></journey-section>
+            <journey-section @journey-section-added="addJourneySection" v-for="journey in journeys"
+                             header='false' :journey="journey"></journey-section>
+          </div>
+        `,
+        data() {
+            return {
+                journeys: []
+            }
+        },
+        methods: {
+            addJourneySection(journeySection) {
+                this.journeys.push(journeySection);
+                console.log(this.journeys);
+                this.$root.$emit("journeys-updated", this.journeys);
+            }
+        }
+    })
+    Vue.component('journey-section', {
+        props: [ 'header', 'journey' ],
+        template: `
+          <div id="journey-plan"
+               style="background-color:#fff; padding: 10px; margin-left: 50px; width: 405px; z-index:5;">
+            <div class="journey-form">
+              <station-selector @station-selected="setFrom"><span v-if="header !== 'false'">Departure</span></station-selector>
+              <station-selector @station-selected="setTo"><span v-if="header !== 'false'">Arrival</span></station-selector>
+            </div>
+          </div>`,
+        data() {
+            return {
+                from: {},
+                to: {}
+            };
+        },
+        methods: {
+            setFrom(msg) {
+                this.from = msg.entry;
+                if (this.to.id > 0) {
+                    this.addRoute();
+                }
+            },
+            setTo(msg) {
+                this.to = msg.entry;
+                if (this.from.id > 0) {
+                    this.addRoute();
+                }
+            },
+            addRoute() {
+                this.$emit('journey-section-added', {
+                    travelSection: {
+                        from: this.from,
+                        to: this.to
                     }
-                  })
-                  // this.stations.push(...locations);
-                  // this.stations = locations.map(station => ({
-                  //   id: station.id,
-                  //   name: station.name,
-                  //   // Include other necessary properties
-                  // }));
-                  console.log("stations:");
-                  console.log(this.stations);
                 })
-                .catch(error => {
-                  console.error('Error loading CSV:', error);
-                  this.stations = []; // Clear stations on error
-                });
-      },
-      addRoute() {
-        this.$root.$emit('travel-section-added', {
-          travelSection: {
-            from: this.startBahnhof,
-            to: this.zielBahnhof
-          }
-        })
-      }
-    },
-    mounted() {
-      // this.fetchStations();
-    }
-  })
-  Vue.component("map-form", {
-    template: `
-          <div id="map" ref="map" style="height: 100vh; width: 100vw; top:0; position: absolute; left:0; z-index: -1;"></div>
-    `,
-    data() {
-      return {
-        map: null,
-        routePolyline: null
-      };
-    },
-    methods: {
-      addRoute(from, to) {
-        if (!from || !to) {
-          alert("Bitte wählen Sie beide Stationen aus.");
-          return;
+            }
+        },
+        mounted() {
+            console.log("MOUNTED!!", this.journey)
+            if(this.journey){
+                console.log("OVERWRITE")
+                // this.from = this.journey.travelSection.from;
+                // this.to = this.journey.travelSection.to;
+            }
         }
-        // Build URL using selected station ids (startBahnhof and zielBahnhof)
-        const url = `https://trainmap.flubb.de/route.php?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-        fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                  // Convert coordinates from [lon, lat] to [lat, lon]
-                  const coords = data.map(pair => [pair[1], pair[0]]);
-                  // if (this.routePolyline) {
-                  // const coords = data;
-                  //   this.map.removeLayer(this.routePolyline);
-                  // }
-                  // Create a polyline for the route (blue color)
-                  this.routePolyline = L.polyline(coords, { color: "blue" }).addTo(this.map);
-                  this.map.fitBounds(this.routePolyline.getBounds());
-                })
-                .catch(error => console.error("API error:", error));
-      },
-      initMap() {
-        // Initialize the map (centered roughly on France)
-        this.map = L.map(this.$refs.map).setView([50.825952, 9.03693], 6);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "&copy; OpenStreetMap contributors"
-        }).addTo(this.map);
-      }
-    },
-    mounted() {
-      this.initMap();
-      this.$root.$on('travel-section-added', (payload) => {
-        this.addRoute(payload.travelSection.from, payload.travelSection.to);
-      })
-    }
-  });
+    })
+    Vue.component("map-form", {
+        template: `
+          <div id="map" ref="map"
+               style="height: 100vh; width: 100vw; top:0; position: absolute; left:0; z-index: -1;"></div>
+        `,
+        data() {
+            return {
+                map: null,
+                lines: []
+            };
+        },
+        methods: {
+            visualizeRoute(from, to) {
+                if (!from || !to) {
+                    alert("Please select both stations");
+                    return;
+                }
+                // Build URL using selected station ids (startBahnhof and zielBahnhof)
+                const url = `https://trainmap.flubb.de/route.php?from_lon=${from.longitude}&from_lat=${from.latitude}&to_lon=${to.longitude}&to_lat=${to.latitude}&order=lat,lon`;
+                fetch(url)
+                    .then(response => response.json())
+                    .then(coords => {
+                        // Convert coordinates from [lon, lat] to [lat, lon]
+                        // const coords = data.map(pair => [pair[1], pair[0]]);
+                        // Create a polyline for the route (blue color)
+                        let routePolyline = L.polyline(coords, {color: "blue"}).addTo(this.map);
+                        this.map.fitBounds(routePolyline.getBounds());
+                        this.lines.push(routePolyline);
+                    })
+                    .catch(error => console.error("API error:", error));
+            },
+            initMap() {
+                // Initialize the map (centered roughly on France)
+                this.map = L.map(this.$refs.map).setView([50.825952, 9.03693], 6);
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: "&copy; OpenStreetMap contributors"
+                }).addTo(this.map);
+            }
+        },
+        mounted() {
+            this.initMap();
+            this.$root.$on('journey-section-added', (payload) => {
+                console.log(payload);
+                this.visualizeRoute(payload.travelSection.from, payload.travelSection.to);
+            })
 
-  new Vue({
-    el: "#app"
-  });
+            this.$root.$on('journeys-updated', (journeys) => {
+                console.log(journeys);
+                let mappy = this.map;
+                // this.map.eachLayer(function (layer) {
+                //     console.log(layer);
+                //     mappy.removeLayer(layer);
+                // })
+                this.lines.forEach(line => {
+                    line.remove();
+                })
+                journeys.forEach(journey => {
+                    this.visualizeRoute(journey.travelSection.from, journey.travelSection.to);
+                })
+
+            })
+        }
+    });
+
+    new Vue({
+        el: "#app"
+    });
 </script>
 </body>
 </html>
