@@ -7,9 +7,9 @@
     <meta id="vp" name="viewport" content="width=device-width, initial-scale=1">
     <script>
         window.onload = function() {
-            if (screen.width < 500) {
+            if (screen.width < 450) {
                 var mvp = document.getElementById('vp');
-                mvp.setAttribute('content','user-scalable=no,width=500');
+                mvp.setAttribute('content','user-scalable=no,width=450');
             }
         }
     </script>
@@ -42,6 +42,11 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             overflow: hidden;
+        }
+    </style>
+    <style>
+        .leaflet-control-zoom {
+            display: none;
         }
     </style>
 </head>
@@ -202,7 +207,7 @@
         props: [ 'header', 'journey', 'last_line', 'debug', 'index' ],
         template: `
           <div id="journey-plan"
-               style="background-color:#fff; padding: 10px; margin-left: 50px; width: 405px; z-index:5;">
+               style="background-color:#fff; padding: 10px; width: 405px; z-index:5;">
             <div class="journey-form">
               <station-selector @station-selected="setFrom" :station="this.from" :debug="this.debug + 'li'"><span v-if="header !== false">Departure</span></station-selector>
               <station-selector @station-selected="setTo" :station="this.to" :debug="this.debug + 're'"><span v-if="header !== false">Arrival</span></station-selector>
