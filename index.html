@@ -4,6 +4,15 @@
     <meta charset="UTF-8"/>
     <title>TrainMap - Track your Journeys</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta id="vp" name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        window.onload = function() {
+            if (screen.width < 500) {
+                var mvp = document.getElementById('vp');
+                mvp.setAttribute('content','user-scalable=no,width=500');
+            }
+        }
+    </script>
     <!-- Leaflet CSS -->
     <link
             rel="stylesheet"
